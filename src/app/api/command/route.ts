@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { executeCommand, VehicleCommand } from "@/services/genesis";
 import { GmailService } from "@/services/gmail";
 
@@ -10,7 +9,6 @@ const VALID_COMMANDS: VehicleCommand[] = [
   "unlock",
   "status",
 ];
-const MAX_COMMANDS_PER_DAY = 10;
 
 export async function POST(request: NextRequest) {
   // Authenticate with API key
@@ -39,46 +37,16 @@ export async function POST(request: NextRequest) {
 
   // Validate PIN
   if (pin !== process.env.COMMAND_PIN) {
-    await prisma.commandLog.create({
-      data: {
-        command,
-        sender: "api",
-        pin: "***",
-        status: "rejected",
-        error: "Invalid PIN",
-      },
-    });
+    console.warn(`Rejected command: invalid PIN from API`);
     return NextResponse.json({ error: "Invalid PIN" }, { status: 403 });
   }
 
-  // Rate limit
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const count = await prisma.commandLog.count({
-    where: { status: "success", createdAt: { gte: today } },
-  });
-  if (count >= MAX_COMMANDS_PER_DAY) {
-    return NextResponse.json(
-      { error: "Daily limit reached (10/day)" },
-      { status: 429 }
-    );
-  }
-
   // Execute
-  const log = await prisma.commandLog.create({
-    data: { command, sender: "api", pin: "***", status: "pending" },
-  });
-
+  console.log(`Executing command: ${command}`);
   const result = await executeCommand(command);
-
-  await prisma.commandLog.update({
-    where: { id: log.id },
-    data: {
-      status: result.success ? "success" : "failed",
-      response: result.message,
-      error: result.success ? null : result.message,
-    },
-  });
+  console.log(
+    `Command result: ${result.success ? "success" : "failed"} - ${result.message}`
+  );
 
   // Send SMS confirmation if gateway is configured
   if (process.env.SMS_GATEWAY && process.env.GMAIL_APP_PASSWORD) {
