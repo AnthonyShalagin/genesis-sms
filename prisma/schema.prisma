@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model CommandLog {
+  id        String   @id @default(cuid())
+  command   String
+  sender    String
+  pin       String   @default("")
+  status    String   @default("pending") // pending | success | failed | rejected
+  response  String?
+  error     String?
+  createdAt DateTime @default(now())
+}
