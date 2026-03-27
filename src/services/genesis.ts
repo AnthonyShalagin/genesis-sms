@@ -20,7 +20,7 @@ function getClient(): Promise<InstanceType<typeof BlueLinky>> {
     const client = new BlueLinky({
       username: process.env.GENESIS_USERNAME!,
       password: process.env.GENESIS_PASSWORD!,
-      brand: "hyundai", // Genesis shares Hyundai's API infrastructure
+      brand: "hyundai", // bluelinky uses Hyundai API for Genesis vehicles
       region: "US",
       pin: process.env.GENESIS_PIN!,
     });
